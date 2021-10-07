@@ -6,7 +6,7 @@
 ; OC1A normal mode w/o prescaler
 ; atmega8 @4MHz loc. osc. HF:D9 LF:C3(23)
 ; encoder prepared
-; fast mode planned
+; change to fast mode planned
 
 
 #undef  __SFR_OFFSET
