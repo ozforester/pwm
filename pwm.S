@@ -34,8 +34,9 @@ dir    = 19 ; direction
 main:			;
         rcall pwm_init  ;
 	rcall enc_init	;
+	loop:		;
 	rcall encoder	;
-	loop: rjmp loop	;
+	rjmp loop	;
 ret			;
 
 enc_init:
@@ -63,15 +64,15 @@ ret
 
 encoder: ; planned to change pwm
         cpi dir, 1
-        breq led1
+        breq cw
         cpi dir, 2
-        breq led2
+        breq ccw
         rjmp ex
-        led1:
-        ;rcall led_on1
+        cw:
+        ; pwm higher
         rjmp ex
-        led2:
-        ;rcall led_on2
+        ccw:
+        ; pwm_lower
         ex:
 ret
 
