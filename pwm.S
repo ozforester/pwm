@@ -60,7 +60,7 @@ pwm_init:
         out TCCR1B, temp        		;
 	clr temp				; H=0
 	out OCR1AH, temp			;
-	ldi temp, 100				; L=100
+        ldi temp, 100                           ; L=100
 	out OCR1AL, temp			;
         sbi pwmD, pwmA  			; output
 ret
@@ -73,15 +73,21 @@ encoder: ; modulation
         rjmp ex
         cw:
         ; wider
+        in temp, OCR1AH
         in temp, OCR1AL
-	andi temp, 1
+	andi temp, 5
         out OCR1AL, temp
+	clr temp
+        out OCR1AH, temp
         rjmp ex
         ccw:
         ; shorter
+        in temp, OCR1AH
         in temp, OCR1AL
-        subi temp, 1
+        subi temp, 5
         out OCR1AL, temp
+        clr temp
+        out OCR1AH, temp
         ex:
 	clr dir
 ret
