@@ -5,7 +5,9 @@
 ; simple pwm lab
 ; OC1A normal mode w/o prescaler
 ; atmega8 @4MHz loc. osc. HF:D9 LF:C3(23)
-; sram instructions tested with regs
+; encoder prepared
+; fast mode planned
+
 
 #undef  __SFR_OFFSET
 #define __SFR_OFFSET 0
@@ -19,29 +21,38 @@
 #define pwmP PORTB
 #define pwmA PB1
 
-temp     = 16	;
-counter  = 17	;
+temp   = 16 ;
+dlcntr = 17 ; delay
+port   = 18 ; port state
+dir    = 19 ; direction
 
 .section .text
-
+.global INT0_vect
+.global INT1_vect
 .global main
+
 main:			;
         rcall pwm_init  ;
 	rcall enc_init	;
+	rcall encoder	;
 	loop: rjmp loop	;
 ret			;
-
 
 enc_init:
 	cbi encD, encA	; as input
 	sbi encP, encA	; pulled-up
         cbi encD, encB	; same with
         sbi encP, encB	; second
+        ldi temp, 0b00001010 ; @falling
+        out MCUCR, temp
+        in temp, GICR
+        ori temp, 0b11000000 ; enable both
+        out GICR, temp
+        sei
 ret
 
 pwm_init:
 	; TCCR1A not tuch
-	; TCCR1B bit CS1 set (start w/o prescaler)
 	ldi temp, 1<<COM1A0 ;
         out TCCR1A, temp ; toggle
         ldi temp, 1     ;
@@ -50,3 +61,67 @@ pwm_init:
         sbi pwmD, pwmA  ; as output
 ret
 
+encoder: ; planned to change pwm
+        cpi dir, 1
+        breq led1
+        cpi dir, 2
+        breq led2
+        rjmp ex
+        led1:
+        ;rcall led_on1
+        rjmp ex
+        led2:
+        ;rcall led_on2
+        ex:
+ret
+
+INT0_vect:
+        clr port
+        out GIFR, port
+        in port, PIND
+	andi port, 12
+	cpi port, 8
+	breq cw0
+	cpi port, 4
+	breq ccw0
+	reti
+        cw0:
+	ldi dir, 1
+	reti
+        ccw0:
+	ldi dir, 2
+	rcall delay
+reti
+
+INT1_vect:
+        clr port
+        out GIFR, port
+        in port, PIND
+        andi port, 12
+        cpi port, 8
+        breq cw1
+        cpi port, 4
+        breq ccw1
+        reti
+        cw1:
+	ldi dir, 1
+        reti
+        ccw1:
+	ldi dir, 2
+        rcall delay
+reti
+
+delay: ; ~ 16 ms
+        ldi dlcntr, 255
+        dl1:
+        push dlcntr
+        ldi dlcntr, 255
+        dl2:
+        dec dlcntr
+        brne dl2
+        pop dlcntr
+        dec dlcntr
+        brne dl1
+ret
+
+.end
