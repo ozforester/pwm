@@ -5,7 +5,7 @@
 ; simple pwm lab
 ; OC1A normal mode w/o prescaler
 ; atmega8 @4MHz loc. osc. HF:D9 LF:C3(23)
-; encoder
+; buttons
 ; fast mode
 
 #undef  __SFR_OFFSET
