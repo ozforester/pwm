@@ -12,11 +12,11 @@
 #define __SFR_OFFSET 0
 #include <avr/io.h>
 
-#define encD DDRD
-#define encP PORTD
-#define encI PIND
-#define encA PD2
-#define encB PD3
+#define btnD DDRD
+#define btnP PORTD
+#define btnI PIND
+#define btnA PD2
+#define btnB PD3
 #define pwmD DDRB
 #define pwmP PORTB
 #define pwmA PB1
@@ -26,65 +26,66 @@ dlcntr = 17 ; delay
 port   = 18 ; port state
 dir    = 19 ; direction
 
-.section .text
-.global INT0_vect
-.global INT1_vect
+.global TIMER0_OVF_vect
 .global main
 
-main:			;
-        rcall pwm_init  ;
-	rcall enc_init	;
-	loop:		;
-	rcall encoder	;
-        rcall delay     ;
-	rjmp loop	;
-ret			;
+.section .text
 
-enc_init:
-	cbi encD, encA	; as input
-	sbi encP, encA	; pulled-up
-        cbi encD, encB	; same with
-        sbi encP, encB	; second
-        ldi temp, 0b00001010 ; @falling
-        out MCUCR, temp
-        in temp, GICR
-        ori temp, 0b11000000 ; enable both
-        out GICR, temp
-        sei
+main:
+        rcall pwm_init
+	rcall timer0_init
+	rcall btn_init
+	loop:
+	rcall buttons
+	rcall delay
+	rjmp loop
+ret
+
+btn_init:
+	cbi btnD, btnA	; as input
+	sbi btnP, btnA	; pulled-up
+        cbi btnD, btnB	; same with
+        sbi btnP, btnB	; second
 ret
 
 pwm_init:
-	ldi temp, ( 1<<COM1A1 | 1<<WGM10 ) 	; clear on compare non inv
+	ldi temp, ( 1<<COM1A1 | 1<<COM1A0 | 1<<WGM10 ) 	; clear on compare inv
         out TCCR1A, temp 			;
         ldi temp, ( 1<<WGM12 |  1<<CS10 )	; 1/8 prescaler fast mode
         out TCCR1B, temp        		;
 	clr temp				; H=0
 	out OCR1AH, temp			;
-        ldi temp, 100                           ; L=100
+        ldi temp, 127                           ; L=100
 	out OCR1AL, temp			;
         sbi pwmD, pwmA  			; output
 ret
 
-encoder: ; modulation
+buttons: ; modulation
         cpi dir, 1
-        breq cw
+        breq wide
         cpi dir, 2
-        breq ccw
+        breq narrow
         rjmp ex
-        cw:
-        ; wider
+        wide:
         in temp, OCR1AH
         in temp, OCR1AL
-	andi temp, 5
+        inc temp
+        inc temp
+        inc temp
+        inc temp
+	inc temp
         out OCR1AL, temp
 	clr temp
         out OCR1AH, temp
         rjmp ex
-        ccw:
-        ; shorter
+        narrow:
         in temp, OCR1AH
         in temp, OCR1AL
-        subi temp, 5
+        dec temp
+        dec temp
+        dec temp
+        dec temp
+        dec temp
         out OCR1AL, temp
         clr temp
         out OCR1AH, temp
@@ -92,41 +93,30 @@ encoder: ; modulation
 	clr dir
 ret
 
-INT0_vect:
-	rcall delay
-	clr port
-        out GIFR, port
-        in port, encI
-	andi port, 12
-	cpi port, 8
-	breq cw0
-	cpi port, 4
-	breq ccw0
-reti
-        cw0:
+TIMER0_OVF_vect:
+	clr dir
+        in port, btnI
+	andi port, 0b00001100
+	cpi port, 0b00001000
+	breq up
+	cpi port, 0b00000100
+	breq down
+	reti
+        up:
 	ldi dir, 1
-reti
-        ccw0:
+	reti
+        down:
 	ldi dir, 2
 reti
 
-INT1_vect:
-	rcall delay
-        clr port
-        out GIFR, port
-        in port, encI
-        andi port, 12
-        cpi port, 8
-        breq cw1
-        cpi port, 4
-        breq ccw1
-reti
-        cw1:
-	ldi dir, 1
-reti
-        ccw1:
-	ldi dir, 2
-reti
+timer0_init:
+	ldi temp, (1<<CS00)
+        ori temp, (1<<CS02)
+        out TCCR0, temp
+	ldi temp, (1<<TOIE0)
+	out TIMSK, temp
+	sei
+ret
 
 delay: ; ~ 16 ms
         ldi dlcntr, 255
