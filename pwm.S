@@ -3,9 +3,9 @@
 ; that can be found in the LICENSE file.
 
 ; simple pwm lab
-; OC1A normal mode w/o prescaler
-; atmega8 @4MHz loc. osc. HF:D9 LF:C3(23)
-; buttons
+; OC1A fast mode w/o prescaler
+; atmega8 @ 8MHz loc. osc. HF:D9 LF:E4
+; two buttons
 ; fast mode
 
 #undef  __SFR_OFFSET
@@ -51,7 +51,7 @@ ret
 pwm_init:
 	ldi temp, ( 1<<COM1A1 | 1<<COM1A0 | 1<<WGM10 ) 	; clear on compare inv
         out TCCR1A, temp 			;
-        ldi temp, ( 1<<WGM12 |  1<<CS10 )	; 1/8 prescaler fast mode
+        ldi temp, ( 1<<CS10 )			; no prescaler fast mode
         out TCCR1B, temp        		;
 	clr temp				; H=0
 	out OCR1AH, temp			;
