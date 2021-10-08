@@ -62,11 +62,11 @@ ret
 
 buttons: ; modulation
         cpi dir, 1
-        breq wide
+        breq b_up
         cpi dir, 2
-        breq narrow
+        breq b_down
         rjmp ex
-        wide:
+        b_up:
         in temp, OCR1AH
         in temp, OCR1AL
         inc temp
@@ -78,7 +78,7 @@ buttons: ; modulation
 	clr temp
         out OCR1AH, temp
         rjmp ex
-        narrow:
+        b_down:
         in temp, OCR1AH
         in temp, OCR1AL
         dec temp
